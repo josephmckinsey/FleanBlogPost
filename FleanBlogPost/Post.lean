@@ -9,10 +9,7 @@ import FleanBlogPost.Page
 
 Today is whatever.
 
-# One Section
-%%%
-tag := "one"
-%%%
+# {label one}[One Section]
 
 This is a test $`x^2 + y^2 = z^2`.
 
@@ -44,10 +41,7 @@ Mi proin sed libero enim sed faucibus turpis. Nibh ipsum consequat nisl vel pret
 
 Eget mi proin sed libero enim. Nisl nunc mi ipsum faucibus vitae aliquet nec ullamcorper sit. Tincidunt arcu non sodales neque sodales ut etiam sit. Sed nisi lacus sed viverra tellus. Parturient montes nascetur ridiculus mus mauris vitae. Arcu cursus vitae congue mauris rhoncus. Est sit amet facilisis magna etiam tempor. Egestas diam in arcu cursus euismod quis. Sollicitudin tempor id eu nisl nunc mi. At auctor urna nunc id cursus metus aliquam. Ut sem viverra aliquet eget sit amet tellus cras adipiscing. Massa ultricies mi quis hendrerit dolor magna eget. Fermentum odio eu feugiat pretium nibh. Urna porttitor rhoncus dolor purus non. Egestas dui id ornare arcu. Massa id neque aliquam vestibulum morbi blandit.
 
-# Another Section
-%%%
-tag := "another"
-%%%
+# {label another}[Another Section]
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. At tellus at urna condimentum mattis pellentesque. Nisi vitae suscipit tellus mauris a diam. Nulla pharetra diam sit amet. Auctor neque vitae tempus quam pellentesque nec nam aliquam sem. Nibh venenatis cras sed felis eget velit aliquet sagittis id. A iaculis at erat pellentesque. Quis imperdiet massa tincidunt nunc pulvinar sapien et. Gravida dictum fusce ut placerat orci nulla pellentesque dignissim enim. Nulla facilisi etiam dignissim diam quis enim lobortis.
 
