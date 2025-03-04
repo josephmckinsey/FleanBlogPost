@@ -1,6 +1,34 @@
 import FleanBlogPost.Page
 import Flean
 
+set_option pp.rawOnError true
+
+open Verso.Output.Html in
+def ieee754converter : Verso.Output.Html := {{
+  <video width="75%" controls="true" style="max-width: 75%; margin: 0 auto; display: block;">
+  <source src="flean/ieee754converter.webm" type="video/webm"></source>
+  "This is demonstration of how the IEEE 754 visualizer works by showing a small
+  number like 0.00001 and then a really small subnormal number along with some
+  multiples of them"
+  </video>
+}}
+
+open Verso.Output.Html in
+def type_diagram : Verso.Output.Html := Verso.Output.Html.tag "img" #[
+  ("src", "flean/type_diagram.svg"),
+  ("alt", "A diagram showing the different types of floating point numbers in Flean"),
+  ("style", "max-width: 50%; margin: 0 auto; display: block;")
+] (.text false "")
+
+open Verso.Output.Html in
+def float_diagram : Verso.Output.Html := Verso.Output.Html.tag "img" #[
+  ("src", "flean/float_diagram.svg"),
+  ("alt", "A diagram of the types on a number line"),
+  ("style", "max-width: 50%; margin: 0 auto; display: block;")
+] (.text false "")
+
+
+
 #doc (Page) "Flean: Floating point numbers in Lean, mostly done!" =>
 > Note: this probably won't make sense to anyone who hasn't tried to learn the
 language [Lean](https://lean-lang.org/) yet. Do it! There's a [Lean 4 game about
@@ -11,19 +39,45 @@ TLDR: Implementing floating point numbers in Lean taught me a lot about floating
 point numbers. It sharpened my thinking, helped me learn more mathematics in
 Lean, and it helped me understand founding as a concept.
 
-# Introduction
+# {label intro}[Introduction]
 
 See my previous post on [Flean](https://josephmckinsey.com/flean.html) for
-background on why I decided to do this.  Now that I've gotten many of my
-"goal" theorems, I felt it was a good time to share what I did and
-learned, first about floating point numbers, the design of the library
-I created, and follow with some personal discussion on the process of using
-and learning Lean. I won't go through the details of proofs, unlike an
-academic paper. If you want to truly understand how it works, then unfortunately
-the [code](https://github.com/josephmckinsey/Flean.git) is still the best
-option.
+background on why I decided to do this.  Now that I've gotten many of my "goal"
+theorems, I felt it was a good time to share what I did and learned. {ref approaches}[First],
+I'll go through some of the more basic theory and existing
+lines of work in formalization. This should be accessible to anyone who has a
+mild familiarity with them already. {ref design}[Next], I'll go through the
+design of the library I created, `Flean`. This will be slightly more technical,
+but I won't go through any code snippets in detail. {ref leanlanguage}[Finally],
+I'll go through my own experince with learning Lean as a language, describing
+what some of the fundamentals I learned about the language. This is geared
+towards someone who has some familiarity with the beginner documentation of
+Lean, so I expect you to know what tactics are.
 
-# Approaches for Floating Point Number Proofs
+Floating point numbers errors can be quite subtle, and they
+can have a way of exploding when subtract two large yet
+nearly equal numbers and follow it up with multiplications
+or divisions. If you are not careful, you can easily invalidate your results.
+Large portions of the 20th century numerical analysis literature
+weeded out "unstable" algorithms in favor of largely trusted code,
+but many common functions still have more errors across wider ranges
+than you would guess. Even `sin` is not perfectly accurate on all platforms,
+let alone something like matrix inversion. Theorems about floating point numbers
+can sharpen our understanding, but they can also provide certificates
+that a function is actually "good enough". Usually if you mess up, the worst
+that happens is NaN, but sometimes it's more like
+[missile malfunctions](https://www-users.cse.umn.edu/~arnold/disasters/patriot.html).
+
+Since I won't be going through my code in significant detail, if you want
+to truly understand how it works, then unfortunately the
+[code](https://github.com/josephmckinsey/Flean.git) is still the best option,
+and I still haven't learned how to really write documentation in Lean yet.
+If you were looking for practical applications, then keept looking, but
+maybe I'll invest more if interest arrives. That said, there is certainly
+possible applications, but mainly they boil down to proving that calculations
+done with floats are "close" to the true answer done with real numbers.
+
+# {label approaches}[Approaches for Floating Point Number Proofs]
 
 Typically, there are two ways you prove facts about floating point number
 errors in a theorem-proving language. Either you use interval arithmetic
@@ -69,7 +123,7 @@ and outside formalized mathematics, so there were many resources to help guide
 me. I'd like to think I put my own spin on things.
 
 
-# My Little Theory of Floating Point Numbers
+## {label theory}[A broad overview of floating point numbers]
 
 I started out by reviewing what I knew about floating point numbers:
 - Each floating number had a sign bit, some mantissa, and an exponent.
@@ -145,14 +199,14 @@ what I wanted to do though--a good sign!  I am quite indebted to
 `Mathlib.Data.FP` as otherwise, I would have spent longer having to write the
 configuration objects.
 
-### Other Lean attempts at floating point numbers
+## Other Lean attempts at floating point numbers
 
 I know of the [interval](https://github.com/girving/interval) package now, but I
 didn't know until quite far into mu own attempts. Luckily it looks related but
 quite different in goals. I recall seeing another attempt more recently, but I
 cannot find it now. The whims of search are fickle indeed.
 
-### General Floating Point Number Resources
+## General Floating Point Number Resources
 
 Every so often, more modern explanations easily outstrip old ones. Nowadays,
 there are modern visualizers of the bit-layout of floating point numbers. You
@@ -161,11 +215,14 @@ like https://lukaskollmer.de/ieee-754-visualizer/ and
 https://www.h-schmidt.net/FloatConverter/IEEE754.html.  I wish I'd been shown
 this very early on! Bit twiddling in Python or C++ is not nearly as convenient.
 
+::::blob ieee754converter
+::::
+
 At this point, I decided to "send it" and just try coding some basic structures
 and functions around it. In the next section, I'll go into the design I landed
 on for `Flean`.
 
-## Flean Design
+# {label design}[Flean Design]
 
 ```leanInit demo
 -- This block initializes a Lean context
@@ -179,6 +236,9 @@ determined by the rounding, this suffices for a pretty good base to build more
 complicated proofs off us (hopefullly).
 
 Here are a few core data types the library is proving things _about_:
+
+::::blob type_diagram
+::::
 
 - `FloatCfg`: usually named $`C` contains the precision `C.prec`,
 which is the density of points for each mantissa. It's usually $`2^p` and scales the mantissa.
@@ -222,6 +282,9 @@ def example_float : Flean.Float DoubleCfg := (Flean.Float.normal
 #eval to_rat example_float  -- Converting to rational, it's just a bit bigger than 1
 ```
 
+::::blob float_diagram
+::::
+
 Here are the "goal theorems" I really wanted to prove (and succeeded):
 
 - Coercing a float to the rationals and then rounding should always give the
@@ -245,7 +308,7 @@ rationals was extremely straight-forward. Writing the rounding function was
 a lot more annoying. To do `Flean.Float`, you have to first do normal and
 subnormal numbers.
 
-### Normal Numbers
+## Normal Numbers
 
 Once I had the integer logarithm function in hand, getting the exponent $`e =
 \lfloor \log_2 |q| \rfloor` and mantissa $`m` were easy enough when rounding to
@@ -270,7 +333,7 @@ I do wonder how the human computers of old would handle rounding errors. I'm
 more convinced that subtle rounding errors could gradually appear if a
 computation was spread between several people.
 
-### Rounding Modes
+## Rounding Modes
 
 Since no one truly uses round to $`0` in a real computation, I wanted to
 represent the _real_ way people round floating point numbers:
@@ -557,7 +620,7 @@ and absolute error in really annoying ways, while invoking bounds on the sizes.
 Or you can just use specific intervals and work with those. Overall,
 there looks to be more fun low-hanging fruit elsewhere.
 
-# What I hated about this
+## {label hatred}[What I don't like about the design]
 
 Despite being quite happy with my work and with the process, some
 parts frustrated me to no end. I won't go into too many details here.
@@ -578,7 +641,7 @@ I don't really want to develop this theory anymore. It's sort of exhausting, and
 I feel like if I broaden my horizons, I can learn a lot more. Maybe I'll go to
 recursive reals instead, which have their own weird behavior.
 
-# Leaning Lean as a Language
+# {label leanlanguage}[Leaning Lean as a Language]
 
 Some of my real goals were mildly independent of floating point numbers
 intrinsically. I wanted to specifically learn the kind of basic theory I
@@ -816,7 +879,7 @@ The only downside is that too many theorems do not have meaningful names for
 hypotheses. If there is only one hypothesis, then it's `h`, otherwise ¯\\\_(ツ)\_/¯.
 Informative arguments do not seem to really be a priority yet.
 
-## Things I didn't learn but expected to
+## Things I didn't learn but expected to (AKA Future Directions)
 
 As a few counter-examples to the neat programming techniques I've learned,
 I didn't learn some fundamentals I was hoping to:
@@ -861,7 +924,7 @@ As a counterexample to my ability to learn, some fundamentals still haven't
 - I have no idea how to generate documentation, and I didn't write any.
 - I don't know the correct way to namespace things. I suspect I need a lot more namespaces.
 
-# Concluding Thoughts about Lean in General
+# {label conclusion}[Concluding Thoughts about Lean in General]
 
 There's this little aphorism I occasionally repeat to myself: to solve your
 problem, first solve first order logic. I feel like that applies to `Flean` too. The
