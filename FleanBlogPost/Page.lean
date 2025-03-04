@@ -215,11 +215,177 @@ def renderMathJs : String :=
     }
 });"
 
+def highlightingJs_withFlean : String :=
+"
+window.onload = () => {
+
+    // Don't show hovers inside of closed tactic states
+    function blockedByTactic(elem) {
+      let parent = elem.parentNode;
+      while (parent && \"classList\" in parent) {
+        if (parent.classList.contains(\"tactic\")) {
+          const toggle = parent.querySelector(\"input.tactic-toggle\");
+          if (toggle) {
+            return !toggle.checked;
+          }
+        }
+        parent = parent.parentNode;
+      }
+      return false;
+    }
+
+    function blockedByTippy(elem) {
+      // Don't show a new hover until the old ones are all closed.
+      // Scoped to the nearest \"top-level block\" to avoid being O(n) in the size of the document.
+      var block = elem;
+      const topLevel = new Set([\"section\", \"body\", \"html\", \"nav\", \"header\"]);
+      while (block.parentNode && !topLevel.has(block.parentNode.nodeName.toLowerCase())) {
+        block = block.parentNode;
+      }
+      for (const child of block.querySelectorAll(\".token, .has-info\")) {
+        if (child._tippy && child._tippy.state.isVisible) { return true };
+      }
+      return false;
+    }
+
+    for (const c of document.querySelectorAll(\".hl.lean .token\")) {
+        if (c.dataset.binding != \"\") {
+            c.addEventListener(\"mouseover\", (event) => {
+                if (blockedByTactic(c)) {return;}
+                const context = c.closest(\".hl.lean\").dataset.leanContext;
+                for (const example of document.querySelectorAll(\".hl.lean\")) {
+                    if (example.dataset.leanContext == context) {
+                        for (const tok of example.querySelectorAll(\".token\")) {
+                            if (c.dataset.binding == tok.dataset.binding) {
+                                tok.classList.add(\"binding-hl\");
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        c.addEventListener(\"mouseout\", (event) => {
+            for (const tok of document.querySelectorAll(\".hl.lean .token\")) {
+                tok.classList.remove(\"binding-hl\");
+            }
+        });
+    }
+    /* Render docstrings */
+    if ('undefined' !== typeof marked) {
+        for (const d of document.querySelectorAll(\"code.docstring, pre.docstring\")) {
+            const str = d.innerText;
+            const html = marked.parse(str);
+            const rendered = document.createElement(\"div\");
+            rendered.classList.add(\"docstring\");
+            rendered.innerHTML = html;
+            d.parentNode.replaceChild(rendered, d);
+        }
+    }
+    // Add hovers
+    let siteRoot = typeof __versoSiteRoot !== 'undefined' ? __versoSiteRoot : \"/\";
+    fetch(siteRoot + \"flean/verso-docs.json\").then((resp) => resp.json()).then((versoDocData) => {
+
+      const defaultTippyProps = {
+        /* DEBUG -- remove the space: * /
+        onHide(any) { return false; },
+        trigger: \"click\",
+        // */
+        theme: \"lean\",
+        maxWidth: \"none\",
+        appendTo: () => document.body,
+        interactive: true,
+        delay: [100, null],
+        ignoreAttributes: true,
+        onShow(inst) {
+          if (inst.reference.querySelector(\".hover-info\") || \"versoHover\" in inst.reference.dataset) {
+            if (blockedByTactic(inst.reference)) { return false };
+            if (blockedByTippy(inst.reference)) { return false; }
+          } else { // Nothing to show here!
+            return false;
+          }
+        },
+        content (tgt) {
+          const content = document.createElement(\"span\");
+          content.className = \"hl lean\";
+          content.style.display = \"block\";
+          content.style.maxHeight = \"300px\";
+          content.style.overflowY = \"auto\";
+          content.style.overflowX = \"hidden\";
+          const hoverId = tgt.dataset.versoHover;
+          const hoverInfo = tgt.querySelector(\".hover-info\");
+          if (hoverId) { // Docstrings from the table
+            // TODO stop doing an implicit conversion from string to number here
+            let data = versoDocData[hoverId];
+            if (data) {
+              const info = document.createElement(\"span\");
+              info.className = \"hover-info\";
+              info.style.display = \"block\";
+              info.innerHTML = data;
+              content.appendChild(info);
+              /* Render docstrings - TODO server-side */
+              if ('undefined' !== typeof marked) {
+                  for (const d of content.querySelectorAll(\"code.docstring, pre.docstring\")) {
+                      const str = d.innerText;
+                      const html = marked.parse(str);
+                      const rendered = document.createElement(\"div\");
+                      rendered.classList.add(\"docstring\");
+                      rendered.innerHTML = html;
+                      d.parentNode.replaceChild(rendered, d);
+                  }
+              }
+            } else {
+              content.innerHTML = \"Failed to load doc ID: \" + hoverId;
+            }
+          } else if (hoverInfo) { // The inline info, still used for compiler messages
+            content.appendChild(hoverInfo.cloneNode(true));
+          }
+          return content;
+        }
+      };
+
+      const addTippy = (selector, props) => {
+        tippy(selector, Object.assign({}, defaultTippyProps, props));
+      };
+      addTippy('.hl.lean .const.token, .hl.lean .keyword.token, .hl.lean .literal.token, .hl.lean .option.token, .hl.lean .var.token, .hl.lean .typed.token', {theme: 'lean'});
+      addTippy('.hl.lean .has-info.warning', {theme: 'warning message'});
+      addTippy('.hl.lean .has-info.info', {theme: 'info message'});
+      addTippy('.hl.lean .has-info.error', {theme: 'error message'});
+
+      tippy('.hl.lean .tactic', {
+        allowHtml: true,
+        /* DEBUG -- remove the space: * /
+        onHide(any) { return false; },
+        trigger: \"click\",
+        // */
+        maxWidth: \"none\",
+        onShow(inst) {
+          const toggle = inst.reference.querySelector(\"input.tactic-toggle\");
+          if (toggle && toggle.checked) {
+            return false;
+          }
+          if (blockedByTippy(inst.reference)) { return false; }
+        },
+        theme: \"tactic\",
+        placement: 'bottom-start',
+        content (tgt) {
+          const content = document.createElement(\"span\");
+          const state = tgt.querySelector(\".tactic-state\").cloneNode(true);
+          state.style.display = \"block\";
+          content.appendChild(state);
+          content.style.display = \"block\";
+          content.className = \"hl lean popup\";
+          return content;
+        }
+      });
+  });
+}
+"
+
 def genreBlock : BlockExt → Array (Block Page) → TraverseM (Option (Block Page))
     | .highlightedCode .., _contents => do
       modify fun st => {st with
         stylesheets := st.stylesheets.insert highlightingStyle,
-        scripts := st.scripts.insert highlightingJs
+        scripts := st.scripts.insert highlightingJs_withFlean
       } |>.addJsFile "popper.js" popper |>.addJsFile "tippy.js" tippy |>.addCssFile "tippy-border.css" tippy.border.css
       pure none
     | _, _ => pure none
@@ -228,7 +394,7 @@ def genreInline : InlineExt → Array (Inline Page) → TraverseM (Option (Inlin
     | .highlightedCode .., _contents | .customHighlight .., _contents => do
       modify fun st => {st with
         stylesheets := st.stylesheets.insert highlightingStyle,
-        scripts := st.scripts.insert highlightingJs
+        scripts := st.scripts.insert highlightingJs_withFlean
       } |>.addJsFile "popper.js" popper |>.addJsFile "tippy.js" tippy |>.addCssFile "tippy-border.css" tippy.border.css
       pure none
     | .label x, _contents => do
@@ -361,7 +527,7 @@ where
   remaining {m} {α} (p : ArgParse m α) : ArgParse m (List α) :=
     (.done *> pure []) <|> ((· :: ·) <$> p <*> remaining p)
   attr : ArgParse DocElabM (String × String) :=
-    (fun (k, v) => (k.getId.toString (escape := false), v)) <$> .anyNamed `attribute .string
+    (fun (k, v) => (k.getId.toString (escape := false), v)) <$> .anyNamed "attribute" .string
 
 @[directive_expander html]
 def html : DirectiveExpander
@@ -849,12 +1015,14 @@ def ensureDir (dir : System.FilePath) : IO Unit := do
 
 
 structure HeaderInfo where
+  name : String
   builtInStyles : Std.HashSet String
   builtInScripts : Std.HashSet String
   jsFiles : Array String
   cssFiles : Array String
 
 def getHeaderInfo (t : TraverseState) : HeaderInfo where
+  name := "flean"
   builtInStyles := t.stylesheets
   builtInScripts := t.scripts.insert Traverse.renderMathJs
   jsFiles := t.jsFiles.map (·.1)
@@ -867,9 +1035,9 @@ def getHeader (h : HeaderInfo): Html := Id.run do
   for script in h.builtInScripts do
     out := out ++ {{<script>"\n"{{.text false script}}"\n"</script>"\n"}}
   for js in h.jsFiles do
-    out := out ++ {{<script src=s!"/-verso-js/{js}"></script>}}
+    out := out ++ {{<script src=s!"/{h.name}/verso-js/{js}"></script>}}
   for css in h.cssFiles do
-    out := out ++ {{<link rel="stylesheet" href=s!"/-verso-css/{css}"/>}}
+    out := out ++ {{<link rel="stylesheet" href=s!"/{h.name}/verso-css/{css}"/>}}
   return out ++ {{
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous"/>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
@@ -910,22 +1078,33 @@ def renderPage (doc : Part Page) : IO UInt32 := do
   -- Since we're not rendering Lean code, we can ignore the hover contents.
   let (content, st) ← Page.toHtml {logError} context state {} {} {} doc .empty
 
-  IO.FS.writeFile (cfg.destination.join "-verso-docs.json") (toString st.dedup.docJson)
+  ensureDir (cfg.destination.join "flean")
+
+  IO.FS.writeFile (cfg.destination.join "flean/verso-docs.json") (toString st.dedup.docJson)
   for (name, content) in state.jsFiles do
-    ensureDir (cfg.destination.join "-verso-js")
-    IO.FS.writeFile (cfg.destination.join "-verso-js" |>.join name) content
+    ensureDir (cfg.destination.join "flean/verso-js")
+    IO.FS.writeFile (cfg.destination.join "flean/verso-js" |>.join name) content
   for (name, content) in state.cssFiles do
-    ensureDir (cfg.destination.join "-verso-css")
-    IO.FS.writeFile (cfg.destination.join "-verso-css" |>.join name) content
+    ensureDir (cfg.destination.join "flean/verso-css")
+    IO.FS.writeFile (cfg.destination.join "flean/verso-css" |>.join name) content
 
   let html := {{
     <html>
       <head>
-      {{getHeader <| getHeaderInfo state}}
+      <meta name="date" content="2025-02-27 08:32" /> -- for pelican's parsing
+      <meta name="status" content="hidden" /> -- for pelican's parsing
+      <meta name="tags" content="math, lean" /> -- for pelican's parsing
+      <meta name="slug" content="flean2" /> -- for pelican's parsing
+      <meta name="authors" content="Joseph McKinsey" /> -- for pelican's parsing
+      <meta name="category" content="article" /> -- for pelican's parsing
+      <meta name="summary" content="I am mostly done with flean" /> -- for pelican's parsing
       <title>{{doc.titleString}}</title>
       <meta charset="utf-8"/>
       </head>
-      <body>{{ content }}</body>
+      <body>
+      {{getHeader <| getHeaderInfo state}} -- to escape pelican's parsing
+      {{ content }}
+      </body>
     </html>
   }}
 

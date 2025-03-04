@@ -1,8 +1,8 @@
 import Lake
 open Lake DSL
 
-require verso from git "https://github.com/leanprover/verso.git"@"main"
-require flean from git "https://github.com/josephmckinsey/Flean.git"@"cf22ec0"
+require verso from git "https://github.com/leanprover/verso.git"@"v4.16.0"
+require flean from git "https://github.com/josephmckinsey/Flean.git"@"main"
 
 @[default_target]
 lean_lib FleanBlogPost where
