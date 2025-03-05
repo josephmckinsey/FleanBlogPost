@@ -73,7 +73,7 @@ to truly understand how it works, then unfortunately the
 [code](https://github.com/josephmckinsey/Flean.git) is still the best option,
 and I still haven't learned how to really write documentation in Lean yet.
 If you were looking for practical applications, then keep looking, but
-maybe I'll invest more if interest arrives. That said, there is certainly
+maybe I'll invest more if interest arrives. That said, there are certainly
 possible applications, but mainly they boil down to proving that calculations
 done with floats are "close" to the true answer done with real numbers.
 
