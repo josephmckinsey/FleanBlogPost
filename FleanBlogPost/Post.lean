@@ -37,7 +37,7 @@ approachable.
 
 TLDR: Implementing floating point numbers in Lean taught me a lot about floating
 point numbers. It sharpened my thinking, helped me learn more mathematics in
-Lean, and it helped me understand founding as a concept.
+Lean, and it helped me understand rounding as a concept.
 
 # {label intro}[Introduction]
 
@@ -49,15 +49,15 @@ lines of work in formalization. This should be accessible to anyone who has a
 mild familiarity with them already. {ref design}[Next], I'll go through the
 design of the library I created, `Flean`. This will be slightly more technical,
 but I won't go through any code snippets in detail. {ref leanlanguage}[Finally],
-I'll go through my own experince with learning Lean as a language, describing
+I'll go through my own experience with learning Lean as a language, describing
 what some of the fundamentals I learned about the language. This is geared
 towards someone who has some familiarity with the beginner documentation of
 Lean, so I expect you to know what tactics are.
 
-Floating point numbers errors can be quite subtle, and they
-can have a way of exploding when subtract two large yet
-nearly equal numbers and follow it up with multiplications
-or divisions. If you are not careful, you can easily invalidate your results.
+Floating point number errors can be quite subtle, and they
+explode when subtracting two large yet
+nearly equal numbers followed by multiplication
+or division. If you are not careful, you can easily invalidate your results.
 Large portions of the 20th century numerical analysis literature
 weeded out "unstable" algorithms in favor of largely trusted code,
 but many common functions still have more errors across wider ranges
@@ -72,7 +72,7 @@ Since I won't be going through my code in significant detail, if you want
 to truly understand how it works, then unfortunately the
 [code](https://github.com/josephmckinsey/Flean.git) is still the best option,
 and I still haven't learned how to really write documentation in Lean yet.
-If you were looking for practical applications, then keept looking, but
+If you were looking for practical applications, then keep looking, but
 maybe I'll invest more if interest arrives. That said, there is certainly
 possible applications, but mainly they boil down to proving that calculations
 done with floats are "close" to the true answer done with real numbers.
@@ -96,7 +96,7 @@ are added or multiplied. This becomes quite annoying when you have to mix
 absolute and relative error, which is often, and long running computations can
 produce extremely loose and large error bounds.
 
-Finally, SMT solvers may help be able to prove facts about floating point
+Finally, SMT solvers may be the fastest way to prove facts about floating point
 numbers as well. For the uninitiated, satisfiability modulo theories (SMT) solve
 satisfiability problems (like 'is this formula satisfied for a choice of
 variables?') modulo a theory like "real numbers" or "bitwise arithmetic" (see
@@ -150,18 +150,18 @@ generality too.
 The [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754) standard is not without
 pleasant surprises. The basic arithmetic operations $`+, -, *, /` are defined
 as the correctly rounded exact values. As long as I was careful about computability,
-I didn't even need to write custom $`+, -, *`, etc implementations. All you
+I didn't even need to write custom $`+, -, *, /`, etc implementations. All you
 need is rounding.
 
 Even knowing the details and understanding it, the structure and design of the
 theorems remains. This is where formalization differentiates itself, since you
-now need to organize all the facts aroudn a simpler set of rules you
+now need to organize all the facts around a simpler set of rules you
 can start with.
 
 ## [Flocq](https://flocq.gitlabpages.inria.fr/)
 
 I also looked at floating point numbers in Rocq (AKA Coq) and found
-[`flocq`](https://flocq.gitlabpages.inria.fr/). I have mixed feeling about it
+[`flocq`](https://flocq.gitlabpages.inria.fr/). I have mixed feelings about it
 as a design for Lean. On one hand, it's quite comprehensive. They cover
 many cases and extensions that I didn't really consider. In fact, it was
 hard to determine a unifying theme for all of it. I'd also consider
@@ -180,7 +180,7 @@ floating point numbers as sets of evenly spaced intervals for each
 exponent.
 
 That said, I would take my own criticisms with a grain of salt. I am
-not nearly as knowledgable about Rocq's libraries as I am of Lean.
+not nearly as knowledgeable about Rocq's libraries as I am of Lean.
 It could be skill issue, and the library does really handle "real"
 floating point numbers via some indirection. I wanted to handle
 those "real" floating point numbers more directly. This is around
@@ -202,7 +202,7 @@ configuration objects.
 ## Other Lean attempts at floating point numbers
 
 I know of the [interval](https://github.com/girving/interval) package now, but I
-didn't know until quite far into mu own attempts. Luckily it looks related but
+didn't know until quite far into my own attempts. Luckily it looks related but
 quite different in goals. I recall seeing another attempt more recently, but I
 cannot find it now. The whims of search are fickle indeed.
 
@@ -212,8 +212,8 @@ Every so often, more modern explanations easily outstrip old ones. Nowadays,
 there are modern visualizers of the bit-layout of floating point numbers. You
 can plug in different bits and easily see what number is produced.  I really
 like https://lukaskollmer.de/ieee-754-visualizer/ and
-https://www.h-schmidt.net/FloatConverter/IEEE754.html.  I wish I'd been shown
-this very early on! Bit twiddling in Python or C++ is not nearly as convenient.
+https://www.h-schmidt.net/FloatConverter/IEEE754.html. I wish I'd been shown
+these years ago! Bit twiddling in Python or C++ is not nearly as convenient.
 
 ::::blob ieee754converter
 ::::
@@ -231,9 +231,9 @@ on for `Flean`.
 Flean focuses on rounding from $`\mathbb{Q}` to floating point representations
 and interpreting floating point representations in $`\mathbb{Q}`. The use of
 $`\mathbb{Q}` made it all computable, and the explicit conversion functions have
-a lot of structure in them. Since the behavior of floating point number is completely
-determined by the rounding, this suffices for a pretty good base to build more
-complicated proofs off us (hopefullly).
+a lot of structure in them. Since the behavior of floating point numbers is completely
+determined by the rounding, this provides a pretty good base to build more
+complicated proofs off of (hopefully).
 
 Here are a few core data types the library is proving things _about_:
 
@@ -246,7 +246,7 @@ which is the density of points for each mantissa. It's usually $`2^p` and scales
 
 ```lean demo
 def DoubleCfg : FloatCfg := FloatCfg.mk (1 <<< 52) (-1022) 1023 (by norm_num) (
-  Nat.zero_lt_succ 4503599627370495  -- computed with exaxct?
+  Nat.zero_lt_succ 4503599627370495  -- computed with exact?
 )  -- this is a double
 ```
 
@@ -381,8 +381,8 @@ Preserving order and injectivity gives you lemmas about closeness once you can f
 nearby floating point numbers. Note that this comparison uses $`\le` and not $`<`,
 since $`x < 1` may leave us with $`\mathrm{r}(x) = 1`.
 
-Preserving the ordering also part of what makes
-interval arithmetic even work at all, once you know rounding down and rounding
+Preserving the ordering also proves that
+interval arithmetic works at all, once you know rounding down and rounding
 up bounds a value. If you wanted to use `Flean` to develop a theory of interval arithmetic,
 then you would start with the facts that the rounding modes bound $`x`:
 $`x^- \le x \le x^+`. Then you can prove theorems like $`(x^- + y^-) \le x + y \le (x^+ + y^+)`
@@ -418,7 +418,7 @@ insufficient normalization could make the comparison annoying.
 
 ## More special cases :(
 
-If I was pleasantly surprised by how nice order-theoretic properties simplied
+If I was pleasantly surprised by how nice order-theoretic properties simplified
 the proofs, I was unpleasantly surprised by how many special cases there were.
 I expected a few, but I had hoped that I could have squished more of them together
 somehow.
@@ -510,14 +510,13 @@ It was more helpful to recognize that `to_rat f` was either equal to a normal
 small ones and `FloatRep` are the large ones). At the boundary between
 `SubnormRep` and `FloatRep`, where rounding modes get things real funky, the
 overlap between representations plus rounding preserves order smoothed out both
-cases. This makes the overal and combination of representations a bit finicky
-but definitely worth it.
+cases. This makes combining representations a bit finicky but definitely worth it.
 
 ```lean demo
 #check splitIsFinite  -- This is how you _should_ split isFinite
 ```
 
-Coming up with the right formulation w`IsFinite` took me several tries.
+Coming up with the right formulation for `IsFinite` took me several tries.
 The first 5 or so were disgustingly unergonomic. This is perhaps
 the one I'm most proud of.
 
@@ -566,7 +565,7 @@ There's always more to prove, and I'd like to do other things too.
 
 One little anecdote: When I was proving these theorems about floating point
 numbers, I actually realized that I had implemented it incorrectly at first.
-When implementing carry over for subnormal to normal numbers, I had an
+When implementing carry-over for subnormal to normal numbers, I had an
 off-by-one error. This eventually shook out in the proof. This should not be
 taken as evidence that formalizing numbers is an efficient way to figure out
 errors, since I really only got rid of one error this way.
@@ -630,7 +629,7 @@ parts frustrated me to no end. I won't go into too many details here.
 	and sometimes four, and sometimes like six. Not fun.
 
 	It was probably good for me, though, because it required me to figure out how
-	to refactor things so it's not the most horrible. Although, I could probably
+	to refactor things so they're not as horrible. Although, I could probably
 	improve that.
 - Weird junk values (AKA why does `1/0 = 0`?)
 	I think I've gotten used to them.
@@ -641,7 +640,7 @@ I don't really want to develop this theory anymore. It's sort of exhausting, and
 I feel like if I broaden my horizons, I can learn a lot more. Maybe I'll go to
 recursive reals instead, which have their own weird behavior.
 
-# {label leanlanguage}[Leaning Lean as a Language]
+# {label leanlanguage}[Learning Lean as a Language]
 
 Some of my real goals were mildly independent of floating point numbers
 intrinsically. I wanted to specifically learn the kind of basic theory I
@@ -673,14 +672,14 @@ I started writing my own function to do a logarithm because I couldn't figure
 out what kind of logarithm I wanted to write. I knew about `Nat.log` too, but I
 didn't want that exactly either. My own implementation had a few of my own false
 starts (which I could have avoided with pen and paper), but eventually I figured
-out the **right** search terms. I was trolling through the files related to
+out the **right** search terms. I was trawling through the files related to
 `zpow` and realized that there was an `Int.log` with a definition essentially
 identical to mine. After experiencing this, I realized that my usual go-to of
 googling is a terrible way to learn a theory in Lean. Instead,
 
 + Try searching in mathlib documentation. You may need to scroll a lot.
 + Try searching for a theorem name with `exact?`.
-+ Try searching with [leansearch.net](leansearch.net) or with `#leansearch`.
++ Try searching with [leansearch.net](https://leansearch.net) or with `#leansearch`.
 Despite being AI, the hype for leansearch is real. There's also Moogle, but I
 never use it.
 + Search for theorems you might think are related to your
@@ -693,7 +692,7 @@ and associated proofs in those files. I was really cooking now.
 
 Ultimately, it seems impossible to keep the names of all of the theorems
 necessary for even ordinary algebra in my own memory.  Unless the lemmas and
-theorems magically becomes more expressive, tactics become more powerful, or
+theorems magically become more expressive, tactics become more powerful, or
 something like that, it seems like something like leansearch is the future +
 `exact?` of course. I wouldn't discount future magical changes in Lean though.
 
@@ -702,7 +701,7 @@ something like that, it seems like something like leansearch is the future +
 There's also a variety of tactics that you'll see used in `mathlib` that I did
 not use when learning from beginner guides. For example, Mathematics in
 Lean doesn't tell you about `refine`, and `refine` shows up all the time
-in actual code since it shortens proofs significantly. There's some other features
+in actual code since it shortens proofs significantly. There are some other features
 the beginner documentation tells you about, like substituting with `rfl` in calls to
 `rcases` or other tactics. Unfortunately, this never worked out for me because `rfl`
 doesn't rewrite beyond single variables. Similarly, tactics like
@@ -712,14 +711,14 @@ proof.
 
 Later, I systematically went through all the tactics available in
 `Mathlib.Tactics` and figured out what they actually did. Out of this,
-I discovered many tactics which were indispensible.
+I discovered many tactics which were indispensable.
 
 ## Positivity
 
-For instance, `positivity` is indispensible. `positivity` is a tactic that
-proves whether a quantity is positive. That can actually include non-negative,
-include non-zero, and it can just be straight up positive. I thought, this is
-the bee's knees when I found it, and I was right.
+For instance, `positivity` is indispensable. `positivity` is a tactic that
+proves whether a quantity is positive. That actually covers non-negative,
+non-zero, or just positive. I thought, this is the bee's knees when I found
+it, and I was right.
 
 Since a lot of theorems in `mathlib` generally, and specifically floating point
 numbers, involve proving that certain quantities, positive or non-negative or
@@ -808,8 +807,8 @@ One lingering reflection has been how my understanding of some tactics
 remains tantalizingly limited.
 
 1. `aesop`: As a general solver, it can probably do a lot more, but the
-configuration seemed challenging, and I didn't know how to get started. It's not
-useful by default it seems.
+configuration seemed challenging, and I didn't know how to get started. It doesn't
+seem useful by default.
 
 2. Custom `simp` lemmas: It's unclear what should
 be a simp lemma and when you should just pass your lemma to simp with `simp
@@ -821,16 +820,18 @@ actually found a specific scenario in which it worked. This may be user error.
 
 ## "Without Loss of Generality" tactic
 
-I have avoided discussing the `wlog` tactic, since I have mixed feelings. In
-some theorems, it lets you clear out specific cases very quickly, but it often hides
-the higher order logic that binds all your theorems in similar structures.
-`wlog` lets you assert a statement and then you can prove that its negation still
-lets you prove the theorem somehow. However, this often obscures some symmetry
-arguments that are useful to extract out as their own lemmas or pseudo-induction theorems.
+I have avoided discussing the `wlog` tactic, since I have mixed feelings about
+recommending it as a go-to option. In some theorems, it lets you clear out
+specific cases very quickly, but it often hides the higher order logic that
+binds all your theorems in similar structures. `wlog` lets you assert a
+statement and prove that if the theorem is true while asserting the statement,
+then it is true when negating the statement. However, this often obscures some
+symmetry arguments that are useful to extract out as their own lemmas or
+pseudo-induction theorems.
 
-Earlier I listed out several examples of special cases. Many times I tred using
-`wlog` and had to refactor later.  For dealing with a positive and negative
-case. I started out by using `wlog`, but it's cleaner to define `neg` functions
+Earlier I listed out several examples of special cases. Many times I tried using
+`wlog` and had to refactor later. For dealing with a positive and negative
+case, I started out by using `wlog`, but it's cleaner to define `neg` functions
 on the representations and a set of theorems there. Similarly, I created a
 theorem to apply symmetry arguments on the rationals to prove theorems of the
 type `P q1 q2`.
@@ -844,8 +845,8 @@ special cases either defined by users or defined by the goal of a proof instead.
 I have no idea which one is the "best" to use at any given time. They all seem
 to have their own gotchas in terms of manual work and labeling hypotheses.
 
-Sometimes I also discovered that the way you split a function or a function
-definition is counterproductive to how you want to split a theorem into pieces.
+Sometimes I also discovered that default way to split a function
+_definition_ is counterproductive to how you want to split the _theorem_ into pieces.
 As discussed earlier, `splitIsFinite` defined a better way to split floats
 into pieces than I could get with any standard tactic.
 
@@ -861,14 +862,14 @@ the experience; it was mainly a matter of practice to become proficient.
 
 ## Named Arguments
 
-Beyond the more Lean-specific programming patters, I also learned the value of
-the Lean 4 language features. As a new future in Lean 4, named arguments are
+Beyond the more Lean-specific programming patterns, I also learned the value of
+the Lean 4 language features. As a new feature in Lean 4, named arguments are
 criminally underutilized.  The standard library hasn't caught up on informative
 names, and in fact, the documentation is pretty light on its usage too. I found
 named arguments to be one of the most helpful features, and I will deeply miss it in any
 functional programming language from now on.
 
-When you define a lemma in lean, you typically make any variables that can be
+When you define a lemma in Lean, you typically make any variables that can be
 inferred from later theorems as implicit with `{q : Rat}`. However, this does
 not help you when you are applying _backwards reasoning_. The standard approach
 in the documentation is to specify what you are missing with `@lemma_name _ _ _ q`
@@ -932,8 +933,8 @@ existing tactics and language features in Lean still feel vaguely incomplete.
 There feels like a lot of low-hanging fruit, maybe on the software engineering side
 of defining tactics.
 
-Consider some "bad" yet astounding tactics. `apply?`doesn't return useful
-searches even with the `using` keyword, but still searches through many theorem.
+Consider some "bad" yet astounding tactics. `apply?` doesn't return useful
+searches even with the `using` keyword, but still searches through many theorems.
 Similarly, `conv?` often fails when the expressions become too complicated to
 select, but should let you click around in the goal. A la Tantalus, it seems it's not
 easy to pick low-hanging fruit.
