@@ -194,7 +194,7 @@ not nearly as knowledgeable about Rocq's libraries as I am of Lean.
 It could be skill issue, and the library does handle actual floating
 point numbers. I wanted to handle those "real" floating point numbers more
 directly, but I couldn't figure out how to unify subnormal and normal numbers.
-I will assert that using $`\mathbb{Q}` instead of $`mathbb{R}` makes everything
+I will assert that using $`\mathbb{Q}` instead of $`\mathbb{R}` makes everything
 computable and easier to work with.
 
 ## [Mathlib.Data.FP](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/FP/Basic.html)

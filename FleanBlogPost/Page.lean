@@ -1088,11 +1088,11 @@ def renderPage (doc : Part Page) : IO UInt32 := do
     ensureDir (cfg.destination.join "flean/verso-css")
     IO.FS.writeFile (cfg.destination.join "flean/verso-css" |>.join name) content
 
+  -- <meta name="status" content="hidden" /> -- for pelican's parsing
   let html := {{
     <html>
       <head>
-      <meta name="date" content="2025-02-27 08:32" /> -- for pelican's parsing
-      <meta name="status" content="hidden" /> -- for pelican's parsing
+      <meta name="date" content="2025-03-05 18:27" /> -- for pelican's parsing
       <meta name="tags" content="math, lean" /> -- for pelican's parsing
       <meta name="slug" content="flean2" /> -- for pelican's parsing
       <meta name="authors" content="Joseph McKinsey" /> -- for pelican's parsing
